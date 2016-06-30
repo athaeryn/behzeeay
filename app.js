@@ -19,9 +19,9 @@ class Anchor {
     this.children.push(anchor)
   }
 
-  draw (ctx) {
-    ctx.strokeRect(this.x - 2, this.y - 2, 5, 5)
-    ctx.fillRect(this.x - 1, this.y - 1, 3, 3)
+  draw (ctx, width = 5) {
+    ctx.fillRect(this.x - width / 2, this.y - width / 2, width, width)
+    ctx.strokeRect(this.x - width / 2, this.y - width / 2, width, width)
   }
 
   *[Symbol.iterator] () {
@@ -42,11 +42,8 @@ setTimeout(function () {
 
   const ctx = canvas.getContext('2d')
   ctx.fillStyle = 'white'
-  const state = {}
-  state.mouseX = 0
-  state.mouseY = 0
 
-  let rootAnchor
+  let rootAnchors = []
 
   let activeAnchor
   let lastAnchor
@@ -54,25 +51,31 @@ setTimeout(function () {
   canvas.addEventListener('mousedown', function(event) {
     const x = event.layerX
     const y = event.layerY
-    const newAnchor = new Anchor(event.layerX, event.layerY)
 
-    if (!rootAnchor) {
-      rootAnchor = newAnchor
-      activeAnchor = newAnchor
-      return
-    }
+    // if (!rootAnchor) {
+    //   rootAnchor = newAnchor
+    //   activeAnchor = newAnchor
+    //   return
+    // }
 
     let existingAnchor
-    for (let anchor of rootAnchor) {
-      if (isHit(anchor, x, y)) {
-        existingAnchor = anchor
-        break
+    for (let rootAnchor of rootAnchors) {
+      for (let anchor of rootAnchor) {
+        if (isHit(anchor, x, y)) {
+          existingAnchor = anchor
+          break
+        }
       }
     }
     if (existingAnchor) {
       activeAnchor = existingAnchor
     } else {
-      lastAnchor.addChild(newAnchor)
+      const newAnchor = new Anchor(event.layerX, event.layerY)
+      if (lastAnchor) {
+        lastAnchor.addChild(newAnchor)
+      } else {
+        rootAnchors.push(newAnchor)
+      }
       activeAnchor = newAnchor
     }
     draw()
@@ -81,8 +84,6 @@ setTimeout(function () {
   canvas.addEventListener('mousemove', function (event) {
     const x = event.layerX
     const y = event.layerY
-    state.mouseX = x
-    state.mouseY = y
     if (activeAnchor) {
       activeAnchor.x = x
       activeAnchor.y = y
@@ -96,19 +97,31 @@ setTimeout(function () {
     draw()
   })
 
+  document.addEventListener('keydown', function (event) {
+    if (event.which == 27) { // esc
+      lastAnchor = null
+      activeAnchor = null
+    }
+  })
+
   function draw () {
-    if (!rootAnchor) return
     ctx.clearRect(0, 0, W, H)
-    for (let anchor of rootAnchor) {
-      for (let child of anchor.children) {
-        drawLine(ctx, anchor, child)
-      }
-      if (anchor == activeAnchor) {
-        ctx.strokeStyle = 'cyan'
-        anchor.draw(ctx)
-        ctx.strokeStyle = 'black'
-      } else {
-        anchor.draw(ctx)
+    for (let rootAnchor of rootAnchors) {
+      for (let anchor of rootAnchor) {
+        for (let child of anchor.children) {
+          drawLine(ctx, anchor, child)
+        }
+        if (anchor == activeAnchor) {
+          ctx.strokeStyle = 'cyan'
+          anchor.draw(ctx, 7)
+          ctx.strokeStyle = 'black'
+        } else if (anchor == lastAnchor) {
+          ctx.strokeStyle = 'green'
+          anchor.draw(ctx, 9)
+          ctx.strokeStyle = 'black'
+        } else {
+          anchor.draw(ctx)
+        }
       }
     }
   }
