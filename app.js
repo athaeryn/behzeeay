@@ -8,11 +8,47 @@ function makeCanvas (w, h) {
   return canvas
 }
 
+class Graph {
+  constructor () {
+    this._nodes = new Map()
+    this._edges = new Set()
+  }
+
+  nodes () {
+    return this._nodes.values()
+  }
+
+  *edges () {
+    for (let [a, b] of this._edges.values()) {
+      yield [this._nodes.get(a), this._nodes.get(b)]
+    }
+  }
+
+  addNode (node) {
+    this._nodes.set(node.id, node)
+  }
+
+  removeNode(node) {
+    this._nodes.delete(node.id)
+  }
+
+  addEdge (a, b) {
+    this._edges.add([a.id, b.id])
+  }
+
+  removeEdge (a, b) {
+    this._edges.remove([a.id, b.id])
+  }
+}
+
+let nextAnchorId = 0
 class Anchor {
   constructor (x, y) {
     this.x = x
     this.y = y
     this.children = []
+    this.id = nextAnchorId
+    nextAnchorId += 1
   }
 
   addChild (anchor) {
@@ -37,13 +73,14 @@ function isHit (target, x, y, slop = 4) {
 }
 
 setTimeout(function () {
+
   const canvas = makeCanvas(W, H)
   document.body.appendChild(canvas)
 
   const ctx = canvas.getContext('2d')
   ctx.fillStyle = 'white'
 
-  let rootAnchors = []
+  let graph = new Graph()
 
   let activeAnchor
   let lastAnchor
@@ -54,29 +91,20 @@ setTimeout(function () {
     const x = event.layerX
     const y = event.layerY
 
-    // if (!rootAnchor) {
-    //   rootAnchor = newAnchor
-    //   activeAnchor = newAnchor
-    //   return
-    // }
-
     let existingAnchor
-    for (let rootAnchor of rootAnchors) {
-      for (let anchor of rootAnchor) {
-        if (isHit(anchor, x, y)) {
-          existingAnchor = anchor
-          break
-        }
+    for (let anchor of graph.nodes()) {
+      if (isHit(anchor, x, y)) {
+        existingAnchor = anchor
+        break
       }
     }
     if (existingAnchor) {
       activeAnchor = existingAnchor
     } else {
       const newAnchor = new Anchor(event.layerX, event.layerY)
+      graph.addNode(newAnchor)
       if (lastAnchor) {
-        lastAnchor.addChild(newAnchor)
-      } else {
-        rootAnchors.push(newAnchor)
+        graph.addEdge(lastAnchor, newAnchor)
       }
       activeAnchor = newAnchor
     }
@@ -117,23 +145,21 @@ setTimeout(function () {
 
   function draw () {
     ctx.clearRect(0, 0, W, H)
-    for (let rootAnchor of rootAnchors) {
-      for (let anchor of rootAnchor) {
-        for (let child of anchor.children) {
-          drawLine(ctx, anchor, child)
-        }
-        if (!drawAnchors) continue
-        if (anchor == activeAnchor) {
-          ctx.strokeStyle = 'cyan'
-          anchor.draw(ctx, 7)
-          ctx.strokeStyle = 'black'
-        } else if (anchor == lastAnchor) {
-          ctx.strokeStyle = 'green'
-          anchor.draw(ctx, 9)
-          ctx.strokeStyle = 'black'
-        } else {
-          anchor.draw(ctx)
-        }
+    for (let [a, b] of graph.edges()) {
+      drawLine(ctx, a, b)
+    }
+    for (let anchor of graph.nodes()) {
+      if (!drawAnchors) continue
+      if (anchor == activeAnchor) {
+        ctx.strokeStyle = 'cyan'
+        anchor.draw(ctx, 7)
+        ctx.strokeStyle = 'black'
+      } else if (anchor == lastAnchor) {
+        ctx.strokeStyle = 'green'
+        anchor.draw(ctx, 9)
+        ctx.strokeStyle = 'black'
+      } else {
+        anchor.draw(ctx)
       }
     }
   }
