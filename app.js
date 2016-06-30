@@ -48,6 +48,8 @@ setTimeout(function () {
   let activeAnchor
   let lastAnchor
 
+  let drawAnchors = true
+
   canvas.addEventListener('mousedown', function(event) {
     const x = event.layerX
     const y = event.layerY
@@ -101,7 +103,16 @@ setTimeout(function () {
     if (event.which == 27) { // esc
       lastAnchor = null
       activeAnchor = null
+    } else if (event.which == 72) {
+      drawAnchors = false
     }
+    draw()
+  })
+  document.addEventListener('keyup', function (event) {
+    if (event.which == 72) {
+      drawAnchors = true
+    }
+    draw()
   })
 
   function draw () {
@@ -111,6 +122,7 @@ setTimeout(function () {
         for (let child of anchor.children) {
           drawLine(ctx, anchor, child)
         }
+        if (!drawAnchors) continue
         if (anchor == activeAnchor) {
           ctx.strokeStyle = 'cyan'
           anchor.draw(ctx, 7)
