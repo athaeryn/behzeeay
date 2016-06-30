@@ -161,7 +161,7 @@ setTimeout(function () {
     for (let [a, b] of graph.edges()) {
       drawLine(ctx, a, b)
     }
-    if (lastAnchor) {
+    if (lastAnchor && !hoveredAnchor) {
       ctx.strokeStyle = '#999999'
       drawLine(ctx, mouse, lastAnchor)
       ctx.strokeStyle = 'black'
