@@ -84,6 +84,7 @@ setTimeout(function () {
 
   let activeAnchor
   let lastAnchor
+  let hoveredAnchor
 
   let drawAnchors = true
 
@@ -118,6 +119,14 @@ setTimeout(function () {
       activeAnchor.x = x
       activeAnchor.y = y
     }
+    hoveredAnchor = null
+    for (let anchor of graph.nodes()) {
+      if (anchor == activeAnchor) continue
+      if (isHit(anchor, x, y)) {
+        hoveredAnchor = anchor
+        break
+      }
+    }
     draw()
   })
 
@@ -150,17 +159,23 @@ setTimeout(function () {
     }
     for (let anchor of graph.nodes()) {
       if (!drawAnchors) continue
+      let color = 'black'
+      let size = 5
       if (anchor == activeAnchor) {
-        ctx.strokeStyle = 'cyan'
-        anchor.draw(ctx, 7)
-        ctx.strokeStyle = 'black'
+        color = 'red'
+        size = 7
       } else if (anchor == lastAnchor) {
-        ctx.strokeStyle = 'green'
-        anchor.draw(ctx, 9)
-        ctx.strokeStyle = 'black'
-      } else {
-        anchor.draw(ctx)
+        color = 'green'
+        size = 9
       }
+      if (anchor == hoveredAnchor) {
+        size = 11
+      }
+      if (color != 'black') {
+        ctx.strokeStyle = color
+      }
+      anchor.draw(ctx, size)
+      ctx.strokeStyle = 'black'
     }
   }
 }, 1)
