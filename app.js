@@ -80,6 +80,8 @@ setTimeout(function () {
   const ctx = canvas.getContext('2d')
   ctx.fillStyle = 'white'
 
+  let mouse = { x: 0, y: 0}
+
   let graph = new Graph()
 
   let activeAnchor
@@ -115,6 +117,8 @@ setTimeout(function () {
   canvas.addEventListener('mousemove', function (event) {
     const x = event.layerX
     const y = event.layerY
+    mouse.x = x
+    mouse.y = y
     if (activeAnchor) {
       activeAnchor.x = x
       activeAnchor.y = y
@@ -156,6 +160,11 @@ setTimeout(function () {
     ctx.clearRect(0, 0, W, H)
     for (let [a, b] of graph.edges()) {
       drawLine(ctx, a, b)
+    }
+    if (lastAnchor) {
+      ctx.strokeStyle = '#999999'
+      drawLine(ctx, mouse, lastAnchor)
+      ctx.strokeStyle = 'black'
     }
     for (let anchor of graph.nodes()) {
       if (!drawAnchors) continue
