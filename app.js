@@ -1,134 +1,6 @@
 const W = 500
 const H = 500
 
-function main () {
-  const canvas = makeCanvas(W, H)
-  document.body.appendChild(canvas)
-
-  const ctx = canvas.getContext('2d')
-  ctx.fillStyle = 'white'
-
-  let mouse = { x: 0, y: 0}
-
-  let graph = new Graph()
-
-  let activeAnchor
-  let lastAnchor
-  let hoveredAnchor
-
-  let drawAnchors = true
-
-  canvas.addEventListener('mousedown', function(event) {
-    const x = event.layerX
-    const y = event.layerY
-
-    let existingAnchor
-    for (let anchor of graph.nodes()) {
-      if (anchor.isHit(x, y)) {
-        existingAnchor = anchor
-        break
-      }
-    }
-    if (existingAnchor) {
-      if (lastAnchor) {
-        graph.addEdge(existingAnchor, lastAnchor)
-        activeAnchor = existingAnchor
-      } else {
-        activeAnchor = existingAnchor
-      }
-    } else {
-      const newAnchor = new Anchor(event.layerX, event.layerY)
-      graph.addNode(newAnchor)
-      if (lastAnchor) {
-        graph.addEdge(lastAnchor, newAnchor)
-      }
-      activeAnchor = newAnchor
-    }
-    draw()
-  })
-
-  canvas.addEventListener('mousemove', function (event) {
-    const x = event.layerX
-    const y = event.layerY
-    mouse.x = x
-    mouse.y = y
-    if (activeAnchor) {
-      activeAnchor.x = x
-      activeAnchor.y = y
-    }
-    hoveredAnchor = null
-    for (let anchor of graph.nodes()) {
-      if (anchor == activeAnchor) continue
-      if (anchor.isHit(x, y)) {
-        hoveredAnchor = anchor
-        break
-      }
-    }
-    draw()
-  })
-
-  canvas.addEventListener('mouseup', function (event) {
-    lastAnchor = activeAnchor
-    activeAnchor = null
-    draw()
-  })
-
-  document.addEventListener('keydown', function (event) {
-    if (event.which == 27) { // esc
-      lastAnchor = null
-      activeAnchor = null
-    } else if (event.which == 72) {
-      drawAnchors = false
-    }
-    draw()
-  })
-  document.addEventListener('keyup', function (event) {
-    if (event.which == 72) {
-      drawAnchors = true
-    }
-    draw()
-  })
-
-  function draw () {
-    ctx.clearRect(0, 0, W, H)
-    for (let [a, b] of graph.edges()) {
-      drawLine(ctx, a, b)
-    }
-    if (drawAnchors && lastAnchor) {
-      ctx.strokeStyle = '#999999'
-      drawLine(ctx, mouse, lastAnchor)
-      ctx.strokeStyle = 'black'
-    }
-    for (let anchor of graph.nodes()) {
-      if (!drawAnchors) continue
-      let color = 'black'
-      let size = 5
-      if (anchor == activeAnchor) {
-        color = 'red'
-        size = 7
-      } else if (anchor == lastAnchor) {
-        color = 'green'
-        size = 9
-      }
-      if (anchor == hoveredAnchor) {
-        size = 11
-      }
-      if (color != 'black') {
-        ctx.strokeStyle = color
-      }
-      anchor.draw(ctx, size)
-      ctx.strokeStyle = 'black'
-    }
-  }
-}
-
-function makeCanvas (w, h) {
-  const canvas = document.createElement('canvas')
-  canvas.width = w
-  canvas.height = h
-  return canvas
-}
-
 class Node {
   constructor (id) {
     this.id = id
@@ -221,6 +93,135 @@ class Anchor extends Point {
   }
 }
 Anchor.nextId = 0
+
+const canvas = document.createElement('canvas')
+canvas.width = W
+canvas.height = H
+const ctx = canvas.getContext('2d')
+ctx.fillStyle = 'white'
+let mouse = { x: 0, y: 0}
+
+let graph = new Graph()
+
+let activeAnchor
+let lastAnchor
+let hoveredAnchor
+
+let drawAnchors = true
+
+function handleMouseDown (event) {
+  const x = event.layerX
+  const y = event.layerY
+
+  let existingAnchor
+  for (let anchor of graph.nodes()) {
+    if (anchor.isHit(x, y)) {
+      existingAnchor = anchor
+      break
+    }
+  }
+  if (existingAnchor) {
+    if (lastAnchor) {
+      graph.addEdge(existingAnchor, lastAnchor)
+      activeAnchor = existingAnchor
+    } else {
+      activeAnchor = existingAnchor
+    }
+  } else {
+    const newAnchor = new Anchor(event.layerX, event.layerY)
+    graph.addNode(newAnchor)
+    if (lastAnchor) {
+      graph.addEdge(lastAnchor, newAnchor)
+    }
+    activeAnchor = newAnchor
+  }
+  draw()
+}
+
+function handleMouseMove (event) {
+  const x = event.layerX
+  const y = event.layerY
+  mouse.x = x
+  mouse.y = y
+  if (activeAnchor) {
+    activeAnchor.x = x
+    activeAnchor.y = y
+  }
+  hoveredAnchor = null
+  for (let anchor of graph.nodes()) {
+    if (anchor == activeAnchor) continue
+    if (anchor.isHit(x, y)) {
+      hoveredAnchor = anchor
+      break
+    }
+  }
+  draw()
+}
+
+function handleMouseUp (event) {
+  lastAnchor = activeAnchor
+  activeAnchor = null
+  draw()
+}
+
+function handleKeyDown (event) {
+  if (event.which == 27) { // esc
+    lastAnchor = null
+    activeAnchor = null
+  } else if (event.which == 72) {
+    drawAnchors = false
+  }
+  draw()
+}
+
+function handleKeyUp (event) {
+  if (event.which == 72) {
+    drawAnchors = true
+  }
+  draw()
+}
+
+function main () {
+  document.body.appendChild(canvas)
+
+  canvas.addEventListener('mousedown', handleMouseDown)
+  canvas.addEventListener('mousemove', handleMouseMove)
+  canvas.addEventListener('mouseup', handleMouseUp)
+  document.addEventListener('keydown', handleKeyDown)
+  document.addEventListener('keyup', handleKeyUp)
+}
+
+function draw () {
+  ctx.clearRect(0, 0, W, H)
+  for (let [a, b] of graph.edges()) {
+    drawLine(ctx, a, b)
+  }
+  if (drawAnchors && lastAnchor) {
+    ctx.strokeStyle = '#999999'
+    drawLine(ctx, mouse, lastAnchor)
+    ctx.strokeStyle = 'black'
+  }
+  for (let anchor of graph.nodes()) {
+    if (!drawAnchors) continue
+    let color = 'black'
+    let size = 5
+    if (anchor == activeAnchor) {
+      color = 'red'
+      size = 7
+    } else if (anchor == lastAnchor) {
+      color = 'green'
+      size = 9
+    }
+    if (anchor == hoveredAnchor) {
+      size = 11
+    }
+    if (color != 'black') {
+      ctx.strokeStyle = color
+    }
+    anchor.draw(ctx, size)
+    ctx.strokeStyle = 'black'
+  }
+}
 
 function drawLine (ctx, a, b) {
   ctx.beginPath()
