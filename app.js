@@ -12,7 +12,7 @@ class Node {
   }
 
   removeEdge (id) {
-    this.edges.remove(id)
+    this.edges.delete(id)
   }
 }
 
@@ -52,10 +52,13 @@ class Graph {
 
   // removes b, replaces references with a
   mergeNodes (a, b) {
-    const bEdges = b.edges
-    // this._nodeData.delete(b.id)
-    // this._nodes.delete(b.id)
-    console.log(bEdges)
+    const bEdges = this._nodes.get(b.id).edges.values()
+    for (let nodeId of bEdges) {
+      const node = this._nodes.get(nodeId)
+      this.addEdge(a, node)
+      this.removeEdge(node, b)
+    }
+    this.removeNode(b)
   }
 
   addEdge (a, b) {
@@ -64,8 +67,7 @@ class Graph {
   }
 
   removeEdge (a, b) {
-    console.log('halp')
-    // this._edges.remove([a.id, b.id])
+    this._nodes.get(a.id).removeEdge(b.id)
   }
 }
 
@@ -159,6 +161,9 @@ function handleMouseMove (event) {
 }
 
 function handleMouseUp (event) {
+  if (activeAnchor && !lastAnchor && hoveredAnchor) {
+    graph.mergeNodes(hoveredAnchor, activeAnchor)
+  }
   lastAnchor = activeAnchor
   activeAnchor = null
   draw()
