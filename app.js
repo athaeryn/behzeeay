@@ -174,16 +174,12 @@ function handleKeyDown (event) {
     lastAnchor = null
     activeAnchor = null
   } else if (event.which == 72) {
-    drawAnchors = false
+    drawAnchors = !drawAnchors
   }
   draw()
 }
 
 function handleKeyUp (event) {
-  if (event.which == 72) {
-    drawAnchors = true
-  }
-  draw()
 }
 
 function main () {
