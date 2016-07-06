@@ -8,72 +8,94 @@ function makeCanvas (w, h) {
   return canvas
 }
 
+
+class Node {
+  constructor (id) {
+    this.id = id
+    this.edges = new Set()
+  }
+
+  addEdge (id) {
+    this.edges.add(id)
+  }
+
+  removeEdge (id) {
+    this.edges.remove(id)
+  }
+}
+
 class Graph {
   constructor () {
+    this._nodeData = new Map() // TODO: maybe merge these?
     this._nodes = new Map()
     this._edges = new Set()
   }
 
   nodes () {
-    return this._nodes.values()
+    return this._nodeData.values()
   }
 
   *edges () {
-    for (let [a, b] of this._edges.values()) {
-      yield [this._nodes.get(a), this._nodes.get(b)]
+    // TODO: remove duplication
+    for (let node of this._nodes.values()) {
+      const nodeData = this._nodeData.get(node.id)
+      for (let id of node.edges.values()) {
+        yield [nodeData, this._nodeData.get(id)]
+      }
     }
   }
 
   addNode (node) {
-    this._nodes.set(node.id, node)
+    if (!(node instanceof Point)) {
+      console.error("you're adding something to the graph that isn't a Point")
+    }
+    this._nodeData.set(node.id, node)
+    this._nodes.set(node.id, new Node(node.id))
   }
 
   removeNode(node) {
+    this._nodeData.delete(node.id)
     this._nodes.delete(node.id)
   }
 
   addEdge (a, b) {
-    this._edges.add([a.id, b.id])
+    this._nodes.get(a.id).addEdge(b.id)
+    this._nodes.get(b.id).addEdge(a.id)
   }
 
   removeEdge (a, b) {
-    this._edges.remove([a.id, b.id])
+    console.log('halp')
+    // this._edges.remove([a.id, b.id])
   }
 }
 
-let nextAnchorId = 0
-class Anchor {
+class Point {
   constructor (x, y) {
     this.x = x
     this.y = y
-    this.children = []
-    this.id = nextAnchorId
-    nextAnchorId += 1
   }
 
-  addChild (anchor) {
-    this.children.push(anchor)
+  isHit (x, y, slop = 4) {
+    return Math.abs(this.x - x) <= slop && Math.abs(this.y - y) <= slop
+  }
+}
+
+class Anchor extends Point {
+  constructor (x, y) {
+    super(x, y)
+    this.id = Anchor.nextId
+    Anchor.nextId += 1
   }
 
   draw (ctx, width = 5) {
     ctx.fillRect(this.x - width / 2, this.y - width / 2, width, width)
     ctx.strokeRect(this.x - width / 2, this.y - width / 2, width, width)
   }
-
-  *[Symbol.iterator] () {
-      yield this
-      for (let child of this.children) {
-        yield* child
-      }
-  }
 }
+Anchor.nextId = 0
 
-function isHit (target, x, y, slop = 4) {
-  return Math.abs(target.x - x) <= slop && Math.abs(target.y - y) <= slop
-}
 
 setTimeout(function () {
-
   const canvas = makeCanvas(W, H)
   document.body.appendChild(canvas)
 
@@ -96,7 +118,7 @@ setTimeout(function () {
 
     let existingAnchor
     for (let anchor of graph.nodes()) {
-      if (isHit(anchor, x, y)) {
+      if (anchor.isHit(x, y)) {
         existingAnchor = anchor
         break
       }
@@ -126,7 +148,7 @@ setTimeout(function () {
     hoveredAnchor = null
     for (let anchor of graph.nodes()) {
       if (anchor == activeAnchor) continue
-      if (isHit(anchor, x, y)) {
+      if (anchor.isHit(x, y)) {
         hoveredAnchor = anchor
         break
       }
